@@ -20,6 +20,39 @@ const registerValidator = [
         )
 ];
 
+const loginValidator = [
+    body('email')
+        .notEmpty()
+        .withMessage('Email is required')
+        .isEmail()
+        .withMessage('Invalid email'),
+
+    body('password')
+        .notEmpty()
+        .withMessage('Password is required')
+];
+
+const refreshValidator = [
+    body('refreshToken')
+        .notEmpty()
+        .withMessage(
+            'Refresh token is required'
+        )
+];
+
+const logoutValidator = [
+
+    body('refreshToken')
+        .notEmpty()
+        .withMessage(
+            'Refresh token is required'
+        )
+
+];
+
 module.exports = {
-    registerValidator
+    registerValidator,
+    loginValidator,
+    refreshValidator,
+    logoutValidator
 };
