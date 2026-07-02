@@ -12,9 +12,17 @@ const deleteRefreshToken = async (token) => {
     return await RefreshToken.deleteOne({ token });
 };
 
+const deleteUserRefreshTokens = async (userId) => {
+
+    return await RefreshToken.deleteMany({
+        userId
+    });
+
+};
 
 module.exports = {
     createRefreshToken,
     findRefreshTokenByToken,
-    deleteRefreshToken
+    deleteRefreshToken,
+    deleteUserRefreshTokens
 };

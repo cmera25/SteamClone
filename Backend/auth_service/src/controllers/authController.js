@@ -78,9 +78,60 @@ const logout = async (req, res) => {
 
 };
 
+const forgotPassword = async (req, res) => {
+
+    try {
+
+        const { email } = req.body;
+
+        const resetToken =
+            await authService.forgotPassword(
+                email
+            );
+
+        return res.status(200).json({
+            message:
+                'If the email exists, a recovery email will be sent.',
+            data: process.env.NODE_ENV === 'development'
+                ? { resetToken }
+                : undefined
+        });
+
+    } catch (error) {
+
+        return res.status(400).json({
+            message: error.message
+        });
+
+    }
+
+};
+
+const resetPassword = async (req, res) => {
+
+    try {
+
+        await authService.resetPassword(req.body);
+
+        return res.status(200).json({
+            message: 'Password reset successfully'
+        });
+
+    } catch (error) {
+
+        return res.status(400).json({
+            message: error.message
+        });
+
+    }
+
+};
+
 module.exports = {
     register,
     login,
     refresh,
-    logout
+    logout,
+    forgotPassword,
+    resetPassword
 };

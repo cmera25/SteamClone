@@ -1,9 +1,13 @@
 const userRepository = require('../repositories/userRepository');
 const refreshTokenRepository = require('../repositories/refreshTokenRepository');
+const passwordResetTokenRepository = require('../repositories/passwordResetTokenRepository');
+
+const { nanoid } = require('nanoid');
 
 const {
     hashPassword,
-    comparePassword
+    comparePassword,
+    hashToken
 } = require('../utils/hash');
 
 const {
@@ -92,9 +96,11 @@ const loginUser = async ({
 
     // Guardar Refresh Token
 
+    const hashedRefreshToken = hashToken(refreshToken);
+
     await refreshTokenRepository.createRefreshToken({
         userId: user._id,
-        token: refreshToken,
+        token: hashedRefreshToken,
         expiresAt: new Date(
             Date.now() + 7 * 24 * 60 * 60 * 1000
         )
@@ -114,11 +120,8 @@ const loginUser = async ({
 const refreshSession = async (refreshToken) => {
 
     // Buscar Refresh Token en Mongo
-
-    const storedToken =
-        await refreshTokenRepository.findRefreshTokenByToken(
-            refreshToken
-        );
+    const hashedRefreshToken = hashToken(refreshToken);
+    const storedToken = await refreshTokenRepository.findRefreshTokenByToken(hashedRefreshToken);
 
     if (!storedToken) {
         throw new Error('Invalid refresh token');
@@ -133,14 +136,8 @@ const refreshSession = async (refreshToken) => {
         payload = verifyRefreshToken(refreshToken);
 
     } catch (error) {
-
-        await refreshTokenRepository.deleteRefreshToken(
-            refreshToken
-        );
-
-        throw new Error(
-            'Invalid or expired refresh token'
-        );
+        await refreshTokenRepository.deleteRefreshToken(hashedRefreshToken);
+        throw new Error('Invalid or expired refresh token');
     }
 
     // Buscar usuario
@@ -156,9 +153,7 @@ const refreshSession = async (refreshToken) => {
 
     // Eliminar Refresh Token viejo
 
-    await refreshTokenRepository.deleteRefreshToken(
-        refreshToken
-    );
+    await refreshTokenRepository.deleteRefreshToken(hashedRefreshToken);
 
     // Crear nuevos tokens
 
@@ -173,11 +168,13 @@ const refreshSession = async (refreshToken) => {
             userId: user._id
         });
 
+    const hashedNewRefreshToken =hashToken(newRefreshToken);
+
     // Guardar nuevo Refresh Token
 
     await refreshTokenRepository.createRefreshToken({
         userId: user._id,
-        token: newRefreshToken,
+        token: hashedNewRefreshToken,
         expiresAt: new Date(
             Date.now() + 7 * 24 * 60 * 60 * 1000
         )
@@ -191,9 +188,12 @@ const refreshSession = async (refreshToken) => {
 
 const logoutUser = async (refreshToken) => {
 
+    const hashedRefreshToken =
+    hashToken(refreshToken);
+
     const storedToken =
         await refreshTokenRepository.findRefreshTokenByToken(
-            refreshToken
+            hashedRefreshToken
         );
 
     if (!storedToken) {
@@ -201,15 +201,101 @@ const logoutUser = async (refreshToken) => {
     }
 
     await refreshTokenRepository.deleteRefreshToken(
-        refreshToken
+        hashedRefreshToken
     );
 
     return;
+};
+
+const forgotPassword = async (email) => {
+
+    const user = await userRepository.findUserByEmail(email);
+
+    if (!user) {return;}
+
+    await passwordResetTokenRepository.deleteUserPasswordResetTokens(user._id);
+
+    const resetToken = nanoid(64);
+
+    const hashedResetToken = hashToken(resetToken);
+
+    await passwordResetTokenRepository.createPasswordResetToken({
+
+            userId: user._id,
+            token: hashedResetToken,
+            expiresAt: new Date(Date.now() + 15 * 60 * 1000)
+
+        });
+
+    return resetToken;
+
+};
+
+const resetPassword = async ({
+    resetToken,
+    newPassword
+}) => {
+
+    // Hashear el token recibido
+
+    const hashedResetToken =hashToken(resetToken);
+
+    // Buscar el token en MongoDB
+
+    const storedToken =await passwordResetTokenRepository.findPasswordResetTokenByToken(hashedResetToken);
+
+    if (!storedToken) {
+        throw new Error('Invalid reset token');
+    }
+
+    // Verificar expiración
+
+    if (storedToken.expiresAt < new Date()) {
+
+        await passwordResetTokenRepository.deletePasswordResetToken(hashedResetToken);
+
+        throw new Error('Reset token has expired');
+    }
+
+    // Buscar usuario
+
+    const user =await userRepository.findUserById(storedToken.userId);
+
+    if (!user) {
+        throw new Error('User not found');
+    }
+
+    // Hashear nueva contraseña
+
+    const hashedPassword =await hashPassword(newPassword);
+
+    // Actualizar contraseña
+
+    await userRepository.updateUserPassword(
+        user._id,
+        hashedPassword
+    );
+
+    // Eliminar token de recuperación
+
+    await passwordResetTokenRepository
+        .deletePasswordResetToken(
+            hashedResetToken
+        );
+
+    // Cerrar todas las sesiones
+
+    await refreshTokenRepository.deleteUserRefreshTokens(user._id);
+
+    return;
+
 };
 
 module.exports = {
     registerUser,
     loginUser,
     refreshSession,
-    logoutUser
+    logoutUser,
+    forgotPassword,
+    resetPassword
 };
