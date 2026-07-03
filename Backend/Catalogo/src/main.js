@@ -5,7 +5,7 @@ const cookieParser = require('cookie-parser');
 
 const app = express();
 
-/*const authRoutes = require('./routes/authRoutes');
+const catalogoRoutes = require('./routes/catalogoRoutes');
 
 // Middlewares
 app.use(express.json());
@@ -13,12 +13,12 @@ app.use(cors());
 app.use(morgan('dev'));
 app.use(cookieParser());
 
-app.use('/api/auth', authRoutes);
-*/
+app.use('/api/catalogo', catalogoRoutes);
+
 // Ruta
 app.get('/', (req, res) => {
     res.status(200).json({
-    message: 'Auth Service running'
+    message: 'Catalogo Service running'
     });
 });
 
