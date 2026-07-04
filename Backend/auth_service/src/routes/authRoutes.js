@@ -20,5 +20,6 @@ router.post('/refresh', refreshValidator, validate, authController.refresh);
 router.post('/logout', logoutValidator, validate, authController.logout);
 router.post('/forgot-password', forgotPasswordValidator, validate, authController.forgotPassword);
 router.post('/reset-password', resetPasswordValidator, validate, authController.resetPassword);
+router.post( '/internal/validate-token', authController.validateToken);
 
 module.exports = router;

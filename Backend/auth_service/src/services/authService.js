@@ -291,11 +291,23 @@ const resetPassword = async ({
 
 };
 
+const validateAccessToken = (token) => {
+
+    const payload = verifyAccessToken(token);
+
+    return {
+        userId: payload.userId,
+        role: payload.role
+    };
+
+};
+
 module.exports = {
     registerUser,
     loginUser,
     refreshSession,
     logoutUser,
     forgotPassword,
-    resetPassword
+    resetPassword,
+    validateAccessToken
 };
