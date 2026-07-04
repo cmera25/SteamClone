@@ -127,11 +127,44 @@ const resetPassword = async (req, res) => {
 
 };
 
+const validateToken = async (req, res) => {
+
+    try {
+
+        const authHeader = req.headers.authorization;
+
+        if (!authHeader) {
+            return res.status(401).json({
+                message: 'Authorization header required'
+            });
+        }
+
+        const token = authHeader.split(' ')[1];
+
+        const user =
+            authService.validateAccessToken(token);
+
+        return res.status(200).json({
+            valid: true,
+            user
+        });
+
+    } catch {
+
+        return res.status(401).json({
+            valid: false
+        });
+
+    }
+
+};
+
 module.exports = {
     register,
     login,
     refresh,
     logout,
     forgotPassword,
-    resetPassword
+    resetPassword,
+    validateToken
 };
