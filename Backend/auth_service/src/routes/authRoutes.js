@@ -24,9 +24,6 @@ const validate = require('../middlewares/validationMiddleware');
 // relacionadas con la autenticación
 const router = express.Router();
 
-// Crea un Router de Express para agrupar todas las rutas
-// relacionadas con la autenticación.
-const router = express.Router();
 
 /*
 |--------------------------------------------------------------------------
